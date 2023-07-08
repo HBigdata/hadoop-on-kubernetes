@@ -1,4 +1,3 @@
-@[TOC]
 ## 一、概述
 前面一篇文章已经很详细的介绍了Hadoop on k8s部署了，这里主要针对部署时可能会调整的地方和注意事项进行讲解，想详细了解详细部署过程可参考我上一篇文章：[Hadoop on k8s 编排部署进阶篇](https://liugp.blog.csdn.net/article/details/131487664)
 
@@ -54,13 +53,13 @@ cd hadoop-on-kubernetes
 cat values.yaml
 ```
 `nameNode`：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/b58a5813073543dd8b3db2909310a3cd.png)
+![输入图片说明](image/2.png)
 `dataNode`：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/f298caf9346f41e6aa95589983958438.png)
+![输入图片说明](image/3.png)
 ### 4）修改 configmap 
 如果需要修改database和 nodemanager 的节点数，记得修改 comfigmap 配置：`templates/hadoop-configmap.yaml`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/007e79e6261a4eb5bdb242c119221283.png)
+![输入图片说明](image/4.png)
 ### 5）安装 helm
 下载地址：[https://github.com/helm/helm/releases](https://github.com/helm/helm/releases)
 ```bash
@@ -89,7 +88,7 @@ helm install hadoop ./ -n hadoop --create-namespace
 # 查看
 kubectl get pods,svc -n hadoop -owide
 ```
-![在这里插入图片描述](https://img-blog.csdnimg.cn/35604742a4a942719675f730ae98895a.png)
+![输入图片说明](image/5.png)
 
 > 【温馨提示】上面还有几个pod没起来，那是因为资源不足导致，如果小伙伴资源足够是不会出现这个问题的。
 
