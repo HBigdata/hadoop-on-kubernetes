@@ -1,0 +1,143 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "hadoop.fullname" . }}-yarn-nm
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/hadoop-configmap.yaml") . | sha256sum }}
+  labels:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    helm.sh/chart: {{ include "hadoop.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: yarn-nm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "hadoop.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: yarn-nm
+  serviceName: {{ include "hadoop.fullname" . }}-yarn-nm
+  replicas: {{ .Values.yarn.nodeManager.replicas }}
+{{- if .Values.yarn.nodeManager.parallelCreate }}
+  podManagementPolicy: Parallel
+{{- end }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "hadoop.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: yarn-nm
+    spec:
+      affinity:
+        podAntiAffinity:
+        {{- if eq .Values.antiAffinity "hard" }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: "kubernetes.io/hostname"
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: {{ include "hadoop.name" . }}
+                app.kubernetes.io/instance: {{ .Release.Name }}
+                app.kubernetes.io/component: yarn-nm
+        {{- else if eq .Values.antiAffinity "soft" }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 5
+            podAffinityTerm:
+              topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: {{ include "hadoop.name" . }}
+                  app.kubernetes.io/instance: {{ .Release.Name }}
+                  app.kubernetes.io/component: yarn-nm
+        {{- end }}
+      terminationGracePeriodSeconds: 0
+      initContainers:
+      - name: wait-for-rm
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command: ['sh', '-c', "until curl -m 3 -sI http://{{ include "hadoop.fullname" . }}-yarn-rm-{{ sub .Values.yarn.resourceManager.replicas 1 }}.{{ include "hadoop.fullname" . }}-yarn-rm.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.resourceManager.ports.web }} | egrep --silent 'HTTP/1.1 200 OK|HTTP/1.1 302 Found'; do echo waiting for rm; sleep 1; done"]
+      containers:
+      - name: yarn-nm
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        ports:
+        - containerPort: {{ .Values.service.nodeManager.ports.web }}
+          name: web
+        command: ["sh","-c","/opt/apache/bootstrap.sh hadoop-yarn-nm {{ include "hadoop.fullname" . }}-yarn-rm.{{ .Release.Namespace }}.svc.cluster.local {{ .Values.service.resourceManager.ports.web }}"]
+        resources:
+{{ toYaml .Values.yarn.nodeManager.resources | indent 10 }}
+        readinessProbe:
+          httpGet:
+            path: /node
+            port: {{ .Values.service.nodeManager.ports.web }}
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /node
+            port: {{ .Values.service.nodeManager.ports.web }}
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        env:
+        - name: MY_CPU_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: yarn-nm
+              resource: limits.cpu
+              divisor: 1
+        - name: MY_MEM_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: yarn-nm
+              resource: limits.memory
+              divisor: 1M
+        volumeMounts:
+        - name: core-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/core-site.xml
+          subPath: core-site.xml
+        - name: hdfs-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/hdfs-site.xml
+          subPath: hdfs-site.xml
+        - name: mapred-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/mapred-site.xml
+          subPath: mapred-site.xml
+        - name: yarn-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/yarn-site.xml
+          subPath: yarn-site.xml
+        - name: dfs-hosts-includes
+          mountPath: /opt/apache/hadoop/etc/hadoop/dfs-hosts.includes
+          subPath: dfs-hosts.includes
+        - name: dfs-hosts-excludes
+          mountPath: /opt/apache/hadoop/etc/hadoop/dfs-hosts.excludes
+          subPath: dfs-hosts.excludes
+        - name: yarn-hosts-includes
+          mountPath: /opt/apache/hadoop/etc/hadoop/yarn-hosts.includes
+          subPath: yarn-hosts.includes
+        - name: yarn-hosts-excludes
+          mountPath: /opt/apache/hadoop/etc/hadoop/yarn-hosts.excludes
+          subPath: yarn-hosts.excludes
+        securityContext:
+          runAsUser: {{ .Values.securityContext.runAsUser }}
+          privileged: {{ .Values.securityContext.privileged }}
+      volumes:
+      - name: core-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: hdfs-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: mapred-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: yarn-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: dfs-hosts-includes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: dfs-hosts-excludes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: yarn-hosts-includes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: yarn-hosts-excludes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}

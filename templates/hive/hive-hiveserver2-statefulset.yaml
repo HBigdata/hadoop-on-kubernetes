@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "hadoop.fullname" . }}-hive-hiveserver2
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/hadoop-configmap.yaml") . | sha256sum }}
+  labels:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    helm.sh/chart: {{ include "hadoop.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: hive-hiveserver2
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "hadoop.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: hive-hiveserver2
+  serviceName: {{ include "hadoop.fullname" . }}-hive-hiveserver2
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "hadoop.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: hive-hiveserver2
+    spec:
+      affinity:
+        podAntiAffinity:
+        {{- if eq .Values.antiAffinity "hard" }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: "kubernetes.io/hostname"
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: {{ include "hadoop.name" . }}
+                app.kubernetes.io/instance: {{ .Release.Name }}
+                app.kubernetes.io/component: hive-hiveserver2
+        {{- else if eq .Values.antiAffinity "soft" }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 5
+            podAffinityTerm:
+              topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: {{ include "hadoop.name" . }}
+                  app.kubernetes.io/instance: {{ .Release.Name }}
+                  app.kubernetes.io/component: hive-hiveserver2
+        {{- end }}
+      terminationGracePeriodSeconds: 0
+      initContainers:
+      - name: wait-hive-metastore
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command: ['sh', '-c', "until (echo 'q')|telnet -e 'q' {{ include "hadoop.fullname" . }}-hive-metastore.{{ .Release.Namespace }}.svc.cluster.local {{ .Values.service.hive.metastore.port }} >/dev/null 2>&1; do echo waiting for hive metastore; sleep 1; done"]
+      containers:
+      - name: hive-hiveserver2
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        ports:
+        - containerPort: {{ .Values.service.hive.hiveserver2.port }}
+          name: web
+        command: ["sh","-c","/opt/apache/bootstrap.sh hive-hiveserver2"]
+        resources:
+{{ toYaml .Values.hive.hiveserver2.resources | indent 10 }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.hive.hiveserver2.port }}
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.hive.hiveserver2.port }}
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        volumeMounts:
+        - name: core-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/core-site.xml
+          subPath: core-site.xml
+        - name: hdfs-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/hdfs-site.xml
+          subPath: hdfs-site.xml
+        - name: mapred-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/mapred-site.xml
+          subPath: mapred-site.xml
+        - name: yarn-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/yarn-site.xml
+          subPath: yarn-site.xml
+        - name: dfs-hosts-includes
+          mountPath: /opt/apache/hadoop/etc/hadoop/dfs-hosts.includes
+          subPath: dfs-hosts.includes
+        - name: dfs-hosts-excludes
+          mountPath: /opt/apache/hadoop/etc/hadoop/dfs-hosts.excludes
+          subPath: dfs-hosts.excludes
+        - name: yarn-hosts-includes
+          mountPath: /opt/apache/hadoop/etc/hadoop/yarn-hosts.includes
+          subPath: yarn-hosts.includes
+        - name: yarn-hosts-excludes
+          mountPath: /opt/apache/hadoop/etc/hadoop/yarn-hosts.excludes
+          subPath: yarn-hosts.excludes
+        - name: hive-site
+          mountPath: /opt/apache/hive/conf/hive-site.xml
+          subPath: hive-site.xml
+        securityContext:
+          runAsUser: {{ .Values.securityContext.runAsUser }}
+          privileged: {{ .Values.securityContext.privileged }}
+      volumes:
+      - name: core-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: hdfs-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: mapred-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: yarn-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: dfs-hosts-includes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: dfs-hosts-excludes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: yarn-hosts-includes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: yarn-hosts-excludes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: hive-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}-hive

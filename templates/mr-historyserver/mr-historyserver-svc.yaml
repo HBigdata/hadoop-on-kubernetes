@@ -1,0 +1,20 @@
+# Service to access the yarn web ui
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hadoop.fullname" . }}-mr-historyserver
+  labels:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    helm.sh/chart: {{ include "hadoop.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: mr-historyserver
+spec:
+  ports:
+  - port: {{ .Values.service.mrHistoryserver.ports.web }}
+    name: web
+    nodePort: {{ .Values.service.mrHistoryserver.nodePorts.web }}
+  type: {{ .Values.service.mrHistoryserver.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: mr-historyserver

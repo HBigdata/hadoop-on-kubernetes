@@ -1,0 +1,24 @@
+# A headless service to create DNS records
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hadoop.fullname" . }}-hdfs-nn
+  labels:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    helm.sh/chart: {{ include "hadoop.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: hdfs-nn
+spec:
+  ports:
+  - name: dfs
+    port: {{ .Values.service.nameNode.ports.dfs }}
+    protocol: TCP
+    nodePort: {{ .Values.service.nameNode.nodePorts.dfs }}
+  - name: webhdfs
+    port: {{ .Values.service.nameNode.ports.webhdfs }}
+    nodePort: {{ .Values.service.nameNode.nodePorts.webhdfs }}
+  type: {{ .Values.service.nameNode.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: hdfs-nn

@@ -1,0 +1,16 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "hadoop.fullname" . }}-mr-historyserver
+  labels:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    helm.sh/chart: {{ include "hadoop.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: mr-historyserver
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "hadoop.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: mr-historyserver
+  minAvailable: {{ .Values.hdfs.mrHistoryserver.pdbMinAvailable }}

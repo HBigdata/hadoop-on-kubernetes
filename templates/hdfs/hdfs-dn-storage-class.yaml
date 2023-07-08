@@ -1,0 +1,7 @@
+{{- if and .Values.persistence.dataNode.enabledStorageClass .Values.persistence.dataNode.storageClass }}
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: {{ .Values.persistence.dataNode.storageClass }}
+provisioner: kubernetes.io/no-provisioner
+{{- end }}

@@ -1,0 +1,162 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "hadoop.fullname" . }}-hdfs-nn
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/hadoop-configmap.yaml") . | sha256sum }}
+  labels:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    helm.sh/chart: {{ include "hadoop.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: hdfs-nn
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "hadoop.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: hdfs-nn
+  serviceName: {{ include "hadoop.fullname" . }}-hdfs-nn
+  replicas: {{ .Values.hdfs.nameNode.replicas }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "hadoop.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: hdfs-nn
+    spec:
+      affinity:
+        podAntiAffinity:
+        {{- if eq .Values.antiAffinity "hard" }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: "kubernetes.io/hostname"
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: {{ include "hadoop.name" . }}
+                app.kubernetes.io/instance: {{ .Release.Name }}
+                app.kubernetes.io/component: hdfs-nn
+        {{- else if eq .Values.antiAffinity "soft" }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 5
+            podAffinityTerm:
+              topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: {{ include "hadoop.name" . }}
+                  app.kubernetes.io/instance: {{ .Release.Name }}
+                  app.kubernetes.io/component: hdfs-nn
+        {{- end }}
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: hdfs-nn
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        command: ["sh","-c","/opt/apache/bootstrap.sh hadoop-hdfs-nn"]
+        resources:
+{{ toYaml .Values.hdfs.nameNode.resources | indent 10 }}
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.service.nameNode.ports.webhdfs }}
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.service.nameNode.ports.webhdfs }}
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        volumeMounts:
+        - name: core-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/core-site.xml
+          subPath: core-site.xml
+        - name: hdfs-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/hdfs-site.xml
+          subPath: hdfs-site.xml
+        - name: mapred-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/mapred-site.xml
+          subPath: mapred-site.xml
+        - name: yarn-site
+          mountPath: /opt/apache/hadoop/etc/hadoop/yarn-site.xml
+          subPath: yarn-site.xml
+        - name: dfs-hosts-includes
+          mountPath: /opt/apache/hadoop/etc/hadoop/dfs-hosts.includes
+          subPath: dfs-hosts.includes
+        - name: dfs-hosts-excludes
+          mountPath: /opt/apache/hadoop/etc/hadoop/dfs-hosts.excludes
+          subPath: dfs-hosts.excludes
+        - name: yarn-hosts-includes
+          mountPath: /opt/apache/hadoop/etc/hadoop/yarn-hosts.includes
+          subPath: yarn-hosts.includes
+        - name: yarn-hosts-excludes
+          mountPath: /opt/apache/hadoop/etc/hadoop/yarn-hosts.excludes
+          subPath: yarn-hosts.excludes
+        {{- range .Values.persistence.nameNode.volumes }}
+        - name: {{ .name }}
+          mountPath: {{ .mountPath }}
+        {{- end }}
+        securityContext:
+          runAsUser: {{ .Values.securityContext.runAsUser }}
+          privileged: {{ .Values.securityContext.privileged }}
+      volumes:
+      - name: core-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: hdfs-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: mapred-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: yarn-site
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: dfs-hosts-includes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: dfs-hosts-excludes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: yarn-hosts-includes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      - name: yarn-hosts-excludes
+        configMap:
+          name: {{ include "hadoop.fullname" . }}
+      {{- if ne .Values.persistence.nameNode.enabledStorageClass true }}
+      {{- range .Values.persistence.nameNode.volumes }}
+      {{- if .hostPath }}
+      - name: {{ .name }}
+        hostPath:
+          path: {{ .hostPath }}
+          type: Directory
+      {{- end }}
+      {{- end }}
+      {{- end }}
+{{- if and .Values.persistence.nameNode.enabledStorageClass .Values.persistence.nameNode.enabled }}
+  volumeClaimTemplates:
+  {{- range .Values.persistence.dataNode.volumes }}
+  - metadata:
+      name: dfs
+      labels:
+        app.kubernetes.io/name: {{ include "hadoop.name" . }}
+        helm.sh/chart: {{ include "hadoop.chart" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: hdfs-nn
+    spec:
+      accessModes:
+      - {{ .Values.persistence.nameNode.accessMode | quote }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.nameNode.size | quote }}
+    {{- if .Values.persistence.nameNode.storageClass }}
+    {{- if (eq "-" .Values.persistence.nameNode.storageClass) }}
+      storageClassName: ""
+    {{- else }}
+      storageClassName: "{{ .Values.persistence.nameNode.storageClass }}"
+    {{- end }}
+    {{- end }}
+      {{- else }}
+      - name: dfs
+        emptyDir: {}
+      {{- end }}
+{{- end }}

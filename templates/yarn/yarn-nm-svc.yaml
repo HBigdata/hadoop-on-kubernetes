@@ -1,0 +1,20 @@
+# Service to access the yarn web ui
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hadoop.fullname" . }}-yarn-nm
+  labels:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    helm.sh/chart: {{ include "hadoop.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: yarn-nm
+spec:
+  ports:
+  - port: {{ .Values.service.nodeManager.ports.web }}
+    name: web
+    nodePort: {{ .Values.service.nodeManager.nodePorts.web }}
+  type: {{ .Values.service.nodeManager.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: yarn-nm

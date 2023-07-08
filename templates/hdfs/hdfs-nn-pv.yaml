@@ -1,0 +1,28 @@
+{{- if .Values.persistence.nameNode.local }}
+{{- range .Values.persistence.nameNode.local }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .name }}
+  labels:
+    name: {{ .name }}
+spec:
+  storageClassName: {{ $.Values.persistence.nameNode.storageClass }}
+  capacity:
+    storage: {{ $.Values.persistence.nameNode.size }}
+  accessModes:
+    - ReadWriteOnce
+  local:
+    path: {{ .path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - {{ .host }}
+---
+{{- end }}
+{{- end }}

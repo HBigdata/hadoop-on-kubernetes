@@ -1,0 +1,222 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hadoop.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    helm.sh/chart: {{ include "hadoop.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  core-site.xml: |
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+    <configuration>
+      <property>
+          <name>fs.defaultFS</name>
+          <value>hdfs://{{ include "hadoop.fullname" . }}-hdfs-nn:9000/</value>
+          <description>NameNode URI</description>
+      </property>
+      <property>
+          <name>hadoop.proxyuser.root.hosts</name>
+          <value>*</value>
+      </property>
+      <property>
+          <name>hadoop.proxyuser.root.groups</name>
+          <value>*</value>
+      </property>
+      <property>
+          <name>hadoop.proxyuser.hadoop.hosts</name>
+          <value>*</value>
+      </property>
+      <property>
+          <name>hadoop.proxyuser.hadoop.groups</name>
+          <value>*</value>
+      </property>
+    </configuration>
+
+  hdfs-site.xml: |
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+    <configuration>
+
+{{- if .Values.hdfs.webhdfs.enabled -}}
+      <property>
+          <name>dfs.webhdfs.enabled</name>
+          <value>true</value>
+      </property>
+{{- end -}}
+
+      <property>
+        <name>dfs.datanode.use.datanode.hostname</name>
+        <value>false</value>
+      </property>
+
+      <property>
+        <name>dfs.client.use.datanode.hostname</name>
+        <value>false</value>
+      </property>
+
+      <!--
+      <property>
+        <name>dfs.datanode.hostname</name>
+        <value>{{ .Values.hdfs.dataNode.externalHostname }}</value>
+      </property>
+      -->
+
+      <property>
+        <name>dfs.namenode.datanode.registration.ip-hostname-check</name>
+        <value>false</value>
+      </property>
+
+      <property>
+        <name>dfs.datanode.http.address</name>
+        <value>0.0.0.0:9864</value>
+      </property>
+
+      <property>
+        <name>dfs.datanode.address</name>
+        <value>0.0.0.0:9866</value>
+      </property>
+
+      <property>
+        <name>dfs.replication</name>
+          <value>3</value>
+      </property>
+
+      <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>/opt/apache/hadoop/data/hdfs/datanode/data1,/opt/apache/hadoop/data/hdfs/datanode/data2,/opt/apache/hadoop/data/hdfs/datanode/data3</value>
+        <description>DataNode directory</description>
+      </property>
+
+      <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>/opt/apache/hadoop/data/hdfs/namenode</value>
+        <description>NameNode directory for namespace and transaction logs storage.</description>
+      </property>
+
+      <property>
+        <name>dfs.namenode.datanode.registration.ip-hostname-check</name>
+        <value>false</value>
+      </property>
+
+      <!-- Bind to all interfaces -->
+      <property>
+        <name>dfs.namenode.rpc-bind-host</name>
+        <value>0.0.0.0</value>
+      </property>
+      <property>
+        <name>dfs.namenode.servicerpc-bind-host</name>
+        <value>0.0.0.0</value>
+      </property>
+      <!-- /Bind to all interfaces -->
+
+    </configuration>
+
+  mapred-site.xml: |
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+    <configuration>
+      <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+      </property>
+      <property>
+        <name>mapreduce.jobhistory.address</name>
+        <value>{{ include "hadoop.fullname" . }}-mr-historyserver-0:10020</value>
+      </property>
+      <property>
+        <name>mapreduce.jobhistory.webapp.address</name>
+        <value>{{ include "hadoop.fullname" . }}-mr-historyserver-0:{{ .Values.service.mrHistoryserver.ports.web }}</value>
+      </property>
+    </configuration>
+
+  yarn-site.xml: |
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+    <configuration>
+      <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>{{ include "hadoop.fullname" . }}-yarn-rm-headless</value>
+      </property>
+
+      <!-- Bind to all interfaces -->
+      <property>
+        <name>yarn.resourcemanager.bind-host</name>
+        <value>0.0.0.0</value>
+      </property>
+      <property>
+        <name>yarn.nodemanager.bind-host</name>
+        <value>0.0.0.0</value>
+      </property>
+      <property>
+        <name>yarn.timeline-service.bind-host</name>
+        <value>0.0.0.0</value>
+      </property>
+      <!-- /Bind to all interfaces -->
+
+      <property>
+        <name>yarn.nodemanager.vmem-check-enabled</name>
+        <value>false</value>
+      </property>
+
+      <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+      </property>
+
+      <property>
+        <name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
+        <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+      </property>
+
+      <property>
+        <description>List of directories to store localized files in.</description>
+        <name>yarn.nodemanager.local-dirs</name>
+        <value>/opt/apache/hadoop/data/yarn/local-dirs</value>
+      </property>
+
+      <property>
+        <description>Where to store container logs.</description>
+        <name>yarn.nodemanager.log-dirs</name>
+        <value>/opt/apache/hadoop/data/yarn/log-dirs</value>
+      </property>
+
+      <property>
+        <description>Where to aggregate logs to.</description>
+        <name>yarn.nodemanager.remote-app-log-dir</name>
+        <value>/opt/apache/hadoop/data/yarn/apps</value>
+      </property>
+
+      <property>
+        <name>yarn.web-proxy.address</name>
+        <value>{{ include "hadoop.fullname" . }}-yarn-proxyserver-0:{{ .Values.service.proxyServer.ports.web }}</value>
+      </property>
+
+      <property>
+        <name>yarn.application.classpath</name>
+        <value>
+          /opt/apache/hadoop/etc/hadoop,
+          /opt/apache/hadoop/share/hadoop/common/*,
+          /opt/apache/hadoop/share/hadoop/common/lib/*,
+          /opt/apache/hadoop/share/hadoop/hdfs/*,
+          /opt/apache/hadoop/share/hadoop/hdfs/lib/*,
+          /opt/apache/hadoop/share/hadoop/mapreduce/*,
+          /opt/apache/hadoop/share/hadoop/mapreduce/lib/*,
+          /opt/apache/hadoop/share/hadoop/yarn/*,
+          /opt/apache/hadoop/share/hadoop/yarn/lib/*
+        </value>
+      </property>
+    </configuration>
+  dfs-hosts.includes: |
+    {{ include "hadoop.fullname" . }}-hdfs-dn-0.{{ include "hadoop.fullname" . }}-hdfs-dn.{{ .Release.Namespace }}.svc.cluster.local
+    {{ include "hadoop.fullname" . }}-hdfs-dn-1.{{ include "hadoop.fullname" . }}-hdfs-dn.{{ .Release.Namespace }}.svc.cluster.local
+    {{ include "hadoop.fullname" . }}-hdfs-dn-2.{{ include "hadoop.fullname" . }}-hdfs-dn.{{ .Release.Namespace }}.svc.cluster.local
+  dfs-hosts.excludes: |
+  yarn-hosts.includes: |
+    {{ include "hadoop.fullname" . }}-yarn-nm-0.{{ include "hadoop.fullname" . }}-yarn-nm.{{ .Release.Namespace }}.svc.cluster.local
+    {{ include "hadoop.fullname" . }}-yarn-nm-1.{{ include "hadoop.fullname" . }}-yarn-nm.{{ .Release.Namespace }}.svc.cluster.local
+    {{ include "hadoop.fullname" . }}-yarn-nm-2.{{ include "hadoop.fullname" . }}-yarn-nm.{{ .Release.Namespace }}.svc.cluster.local
+  yarn-hosts.excludes: |

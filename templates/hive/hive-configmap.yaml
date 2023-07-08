@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hadoop.fullname" . }}-hive
+  labels:
+    app.kubernetes.io/name: {{ include "hadoop.name" . }}
+    helm.sh/chart: {{ include "hadoop.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}-hive
+data:
+  hive-site.xml: |
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+    <configuration>
+        <!-- 配置hdfs存储目录 -->
+        <property>
+                <name>hive.metastore.warehouse.dir</name>
+                <value>/user/hive_remote/warehouse</value>
+        </property>
+
+        <property>
+                <name>hive.metastore.local</name>
+                <value>false</value>
+        </property>
+
+        <!-- 所连接的 MySQL 数据库的地址，hive_local是数据库，程序会自动创建，自定义就行 -->
+        <property>
+                <name>javax.jdo.option.ConnectionURL</name>
+                <value>jdbc:mysql://192.168.182.110:13306/hive_metastore?createDatabaseIfNotExist=true&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai</value>
+        </property>
+
+        <!-- MySQL 驱动 -->
+        <property>
+                <name>javax.jdo.option.ConnectionDriverName</name>
+                <!--<value>com.mysql.cj.jdbc.Driver</value>-->
+                <value>com.mysql.jdbc.Driver</value>
+        </property>
+
+        <!-- mysql连接用户 -->
+        <property>
+                <name>javax.jdo.option.ConnectionUserName</name>
+                <value>root</value>
+        </property>
+
+        <!-- mysql连接密码 -->
+        <property>
+                <name>javax.jdo.option.ConnectionPassword</name>
+                <value>123456</value>
+        </property>
+
+        <!--元数据是否校验-->
+        <property>
+                <name>hive.metastore.schema.verification</name>
+                <value>false</value>
+        </property>
+
+        <property>
+                <name>system:user.name</name>
+                <value>root</value>
+                <description>user name</description>
+        </property>
+
+        <property>
+                <name>hive.metastore.uris</name>
+                <value>thrift://{{ include "hadoop.fullname" . }}-hive-metastore-0.{{ include "hadoop.fullname" . }}-hive-metastore:{{ .Values.service.hive.metastore.port }}</value>
+        </property>
+
+        <!-- host -->
+        <property>
+                <name>hive.server2.thrift.bind.host</name>
+                <value>0.0.0.0</value>
+                <description>Bind host on which to run the HiveServer2 Thrift service.</description>
+        </property>
+
+        <!-- hs2端口 默认是10000-->
+        <property>
+                <name>hive.server2.thrift.port</name>
+                <value>{{ .Values.service.hive.hiveserver2.port }}</value>
+        </property>
+
+        <property>
+                <name>hive.server2.active.passive.ha.enable</name>
+                <value>true</value>
+        </property>
+
+    </configuration>
+
