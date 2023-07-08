@@ -3,7 +3,7 @@
 
 ![输入图片说明](image/1.png)
 ## 二、快速部署步骤如下
-### 1）下载 git
+### 1）安装 git
 ```bash
 yum -y install git
 ```
