@@ -9,8 +9,8 @@ yum -y install git
 ```
 ### 2）部署 mysql
 如果小伙伴已经有mysql了，这一步就可以忽略，如果想快速部署mysql可以参考我以下几篇文章：
-- [通过 docker-compose 快速部署 MySQL保姆级教程](https://blog.csdn.net/qq_35745940/article/details/130856734)
-- [【云原生】MySQL on k8s 环境部署](https://blog.csdn.net/qq_35745940/article/details/126943430)
+- [通过 docker-compose 快速部署 MySQL保姆级教程](https://mp.weixin.qq.com/s?__biz=MzI3MDM5NjgwNg==&mid=2247488051&idx=1&sn=97d08b2f1c634c34099428ef64467c09&chksm=ead0eedadda767cc9d88172ca0724d03d05f97e490590cf3106715f84c4368e01961bc48054e#rd)
+- [【云原生】MySQL on k8s 环境部署](https://mp.weixin.qq.com/s?__biz=MzI3MDM5NjgwNg==&mid=2247486479&idx=1&sn=b9ed32a6cb8b495cf0e7d980f8a1ac99&chksm=ead0f0e6dda779f05ce249ba1cdcd299992a8cc2bd43ff767117342efb43466ae87a8ae32ec1#rd)
 
 这里以 docker-compose 部署 mysql 为例：
 
