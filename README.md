@@ -95,7 +95,7 @@ kubectl get pods,svc -n hadoop -owide
 ### 7）测试验证
 hdfs web：`http://ip:30870`
 ![输入图片说明](image/6.png)
-yarn web：http://ip:
+yarn web：`http://ip:30088`
 ![输入图片说明](image/7.png)
 通过 hive 创建库表和添加数据验证集群可用性
 
