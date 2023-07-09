@@ -91,15 +91,15 @@ helm install hadoop ./ -n hadoop --create-namespace
 # 查看
 kubectl get pods,svc -n hadoop -owide
 ```
-![输入图片说明](image/5.png)
+![输入图片说明](image/6.png)
 
 > 【温馨提示】上面还有几个pod没起来，那是因为资源不足导致，如果小伙伴资源足够是不会出现这个问题的。
 
 ### 9）测试验证
 hdfs web：`http://ip:30870`
-![输入图片说明](image/6.png)
-yarn web：`http://ip:30088`
 ![输入图片说明](image/7.png)
+yarn web：`http://ip:30088`
+![输入图片说明](image/8.png)
 通过 hive 创建库表和添加数据验证集群可用性
 
 ```bash
@@ -121,7 +121,7 @@ LINES TERMINATED BY '\n';
 # 添加数据
 INSERT INTO mytable VALUES (1, 'Alice', 25, 'F'), (2, 'Bob', 30, 'M'), (3, 'Charlie', 35, 'M');
 ```
-![输入图片说明](image/8.png)
+![输入图片说明](image/9.png)
 到此 `Hadoop on k8s` 快速部署进阶篇介绍了，有任何疑请关注我公众号：`大数据与云原生技术分享`，进行问题咨询，进行技术交流，如本篇文章对您有所帮助，麻烦帮忙一键三连（点赞、转发、收藏）~
 
 ![输入图片说明](image/wx.png)
