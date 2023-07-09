@@ -56,11 +56,14 @@ cat values.yaml
 ![输入图片说明](image/2.png)
 `dataNode`：
 ![输入图片说明](image/3.png)
-### 4）修改 configmap 
+### 5）修改 hadoop configmap 
 如果需要修改database和 nodemanager 的节点数，记得修改 comfigmap 配置：`templates/hadoop-configmap.yaml`
 
 ![输入图片说明](image/4.png)
-### 5）安装 helm
+### 6）修改 hive configmap （MySQL 配置）
+如果需要修改hive 配置，记得修改hive comfigmap 配置：`templates/hive/hive-configmap.yaml`
+![输入图片说明](image/5.png)
+### 7）安装 helm
 下载地址：[https://github.com/helm/helm/releases](https://github.com/helm/helm/releases)
 ```bash
 # 下载包
@@ -73,7 +76,7 @@ ln -s /opt/helm/linux-amd64/helm /usr/local/bin/helm
 helm version
 helm help
 ```
-### 6）开始部署
+### 8）开始部署
 
 ```bash
 # 安装
@@ -92,7 +95,7 @@ kubectl get pods,svc -n hadoop -owide
 
 > 【温馨提示】上面还有几个pod没起来，那是因为资源不足导致，如果小伙伴资源足够是不会出现这个问题的。
 
-### 7）测试验证
+### 9）测试验证
 hdfs web：`http://ip:30870`
 ![输入图片说明](image/6.png)
 yarn web：`http://ip:30088`
