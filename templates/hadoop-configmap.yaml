@@ -13,7 +13,7 @@ data:
     <configuration>
       <property>
           <name>fs.defaultFS</name>
-          <value>hdfs://{{ include "hadoop.fullname" . }}-hdfs-nn:9000/</value>
+          <value>hdfs://{{ include "hadoop.fullname" . }}-hdfs-nn.{{ .Release.Namespace }}:9000/</value>
           <description>NameNode URI</description>
       </property>
       <property>
